@@ -9,7 +9,7 @@ const {sendPushNotification}=require("../utils/pushNotification");
 const i18next =require("../config/i18n.js")
 const createPhoto = async (req, res) => {
   try {
-    const { isEdited, name } = req.body;
+    const { isEdited, name, capturedAt } = req.body;
     const user = await userModel.findById(req.user._id);
 
     if (!user) {
@@ -20,10 +20,21 @@ const createPhoto = async (req, res) => {
       return res.status(400).json({ error: i18next.t("create.uploadError") });
     }
 
+    // Capture time comes from the device (file mtime). Fall back to now — which equals the
+    // old behaviour — when it is absent, unparseable, or implausible. The future-date clamp
+    // matters because a device with a wrong clock would otherwise pin a photo to the top of
+    // every list permanently; one day of slack absorbs timezone/skew noise.
+    const parsed = capturedAt ? new Date(capturedAt) : null;
+    const isUsable =
+      parsed &&
+      !Number.isNaN(parsed.getTime()) &&
+      parsed.getTime() <= Date.now() + 24 * 60 * 60 * 1000;
+
     const UserPictures = new photoModel({
       name,
       userId: req.user.id,
       isEdited,
+      capturedAt: isUsable ? parsed : new Date(),
       picture_url: req.file.location,
     });
 
@@ -55,7 +66,9 @@ const getGalleryPhotos = async (req, res) => {
 
     // Set up pagination options
     const options = {
-      sort: { createdAt: -1 },
+      // Capture order, not upload order. createdAt breaks ties and keeps ordering stable
+      // across pages when two photos share a capturedAt.
+      sort: { capturedAt: -1, createdAt: -1 },
       lean: true,
       page,
       limit,
@@ -106,7 +119,9 @@ const getRecentPhotos = async (req, res) => {
 
     // Pagination options
     const options = {
-      sort: { createdAt: -1 },
+      // Capture order, not upload order. createdAt breaks ties and keeps ordering stable
+      // across pages when two photos share a capturedAt.
+      sort: { capturedAt: -1, createdAt: -1 },
       lean: true,
       page,
       limit
@@ -156,7 +171,11 @@ const getAllEditedPhotos = async (req, res) => {
 
     // Pagination options
     const options = {
-      sort: { updatedAt: -1 },
+      // Was `updatedAt: -1`, which is MUTABLE — renaming a photo (updatephoto) bumps
+      // updatedAt, so any rename jumped that photo to the top of "All Your Edits". Sorted by
+      // capture time instead, matching the other two lists and the client's request for
+      // "the order in which they were taken".
+      sort: { capturedAt: -1, createdAt: -1 },
       lean: true,
       page,
       limit
