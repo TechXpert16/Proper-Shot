@@ -73,7 +73,7 @@ const stripeSubscriptionWebhook = async (req, res) => {
 const createSubscription = async (req, res) => {
     try {
         const { userId } = req.body;
-        const priceId = 'price_1SiVFJRt6g1B7np6N4Ll2L3a';
+        const priceId = 'price_1UH6XORt6g1B7np6tnu99FpH';
 
         const user = await User.findById(userId);
         if (!user) {
