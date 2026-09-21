@@ -1,4 +1,18 @@
 {
+    "subscriptionEvents": {
+        "trialEndingTitle": "Tu prueba termina pronto",
+        "trialEndingMessage": "Tu prueba gratuita termina en menos de 24 horas. Suscríbete ahora para seguir usando SnapEstate sin interrupciones.",
+        "activatedTitle": "Suscripción activa",
+        "activatedMessage": "Tu pago se ha realizado correctamente. Tienes acceso completo a SnapEstate.",
+        "renewedTitle": "Suscripción renovada",
+        "renewedMessage": "Tu suscripción a SnapEstate se ha renovado por otro periodo.",
+        "paymentFailedTitle": "Pago fallido",
+        "paymentFailedMessage": "No hemos podido cobrar tu tarjeta. Actualiza tu método de pago para recuperar el acceso a SnapEstate.",
+        "canceledTitle": "Suscripción cancelada",
+        "canceledMessage": "Tu suscripción está cancelada. Conservas el acceso hasta el final del periodo pagado.",
+        "endedTitle": "Suscripción finalizada",
+        "endedMessage": "Tu suscripción a SnapEstate ha finalizado. Vuelve a suscribirte para recuperar el acceso."
+    },
     "signup": {
         "fillAllFields": "Por favor, complete todos los campos",
         "phoneNumberInUse": "Este número de teléfono ya está en uso",

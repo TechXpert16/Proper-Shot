@@ -18,7 +18,7 @@ const userModel = mongoose.Schema({
     },
     trialstartin:{
         type: Date,
-        default: Date.now(),
+        default: Date.now,
     },
     trialendin:{
         type: Date,
@@ -130,13 +130,44 @@ const userModel = mongoose.Schema({
     },
     subscriptionstartin:{
         type: Date,
-        default: Date.now(),
+        default: Date.now,
     },
     subscriptionendin:{
         type: Date,
         default: null,
     },
     account_type: { type: String, default: "" },
+
+    // --- Subscription lifecycle state (written by the Stripe webhook) ---
+    // True once the user asks to cancel but the paid period is still running.
+    cancel_at_period_end: {
+        type: Boolean,
+        default: false,
+    },
+    subscription_canceled_at: {
+        type: Date,
+        default: null,
+    },
+    // Set when an invoice/payment fails, cleared on the next successful payment.
+    // Drives the past-due grace window in utils/subscriptionAccess.js.
+    payment_failed_at: {
+        type: Date,
+        default: null,
+    },
+    last_invoice_id: {
+        type: String,
+        default: "",
+    },
+    // Guards against re-sending the trial-ending and trial-ended notifications
+    // every time the sweep job runs.
+    trial_end_notified_at: {
+        type: Date,
+        default: null,
+    },
+    trial_expired_notified_at: {
+        type: Date,
+        default: null,
+    },
 
 }, {timestamps: true});
 

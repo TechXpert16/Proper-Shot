@@ -1,4 +1,18 @@
 {
+    "subscriptionEvents": {
+        "trialEndingTitle": "Votre essai se termine bientôt",
+        "trialEndingMessage": "Votre essai gratuit se termine dans moins de 24 heures. Abonnez-vous maintenant pour continuer à utiliser SnapEstate sans interruption.",
+        "activatedTitle": "Abonnement actif",
+        "activatedMessage": "Votre paiement a été accepté. Vous avez un accès complet à SnapEstate.",
+        "renewedTitle": "Abonnement renouvelé",
+        "renewedMessage": "Votre abonnement SnapEstate a été renouvelé pour une nouvelle période.",
+        "paymentFailedTitle": "Échec du paiement",
+        "paymentFailedMessage": "Nous n'avons pas pu débiter votre carte. Veuillez mettre à jour votre moyen de paiement pour rétablir l'accès à SnapEstate.",
+        "canceledTitle": "Abonnement annulé",
+        "canceledMessage": "Votre abonnement est annulé. Vous conservez l'accès jusqu'à la fin de la période payée.",
+        "endedTitle": "Abonnement terminé",
+        "endedMessage": "Votre abonnement SnapEstate est terminé. Abonnez-vous à nouveau pour retrouver l'accès."
+    },
     "signup": {
         "fillAllFields": "Veuillez remplir tous les champs",
         "phoneNumberInUse": "Ce numéro de téléphone est déjà utilisé",

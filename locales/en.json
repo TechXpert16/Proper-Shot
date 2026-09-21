@@ -1,4 +1,18 @@
 {
+    "subscriptionEvents": {
+        "trialEndingTitle": "Your trial ends soon",
+        "trialEndingMessage": "Your free trial ends in less than 24 hours. Subscribe now to keep using SnapEstate without interruption.",
+        "activatedTitle": "Subscription active",
+        "activatedMessage": "Your payment went through. You have full access to SnapEstate.",
+        "renewedTitle": "Subscription renewed",
+        "renewedMessage": "Your SnapEstate subscription has been renewed for another period.",
+        "paymentFailedTitle": "Payment failed",
+        "paymentFailedMessage": "We could not charge your card. Please update your payment method to restore access to SnapEstate.",
+        "canceledTitle": "Subscription canceled",
+        "canceledMessage": "Your subscription is canceled. You keep access until the end of your paid period.",
+        "endedTitle": "Subscription ended",
+        "endedMessage": "Your SnapEstate subscription has ended. Subscribe again to regain access."
+    },
     "signup": {
         "fillAllFields": "Please fill in all fields",
         "phoneNumberInUse": "This phone number is already in use",

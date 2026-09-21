@@ -30,17 +30,25 @@ const upload = multer({
 // const photoController = require('../controllers/photoController');
 const { createPhoto,getGalleryPhotos, getRecentPhotos,  deletePhoto, getAllEditedPhotos, updatephoto,deletebulkimage, photoId } = require('../controllers/photoController');
 const authorizationMiddleware = require('../middlewares/myAuth');
+const requireActiveSubscription = require('../middlewares/requireActiveSubscription');
 
-//routes
-photoRouter.post('/create', authorizationMiddleware, upload.single('file'),createPhoto);
-photoRouter.get('/gallery', authorizationMiddleware, getGalleryPhotos);
-photoRouter.get('/recent',authorizationMiddleware,  getRecentPhotos);
-photoRouter.get('/all-edits',authorizationMiddleware,  getAllEditedPhotos);
+// Every photo route is paid functionality, so it sits behind the entitlement
+// gate as well as auth. Reads stay gated too: otherwise an expired user keeps
+// full access to their library, which is the product they stopped paying for.
+// Note the gate must run before multer on upload routes, so a blocked request
+// does not push a file to S3 first.
+photoRouter.post('/create', authorizationMiddleware, requireActiveSubscription, upload.single('file'), createPhoto);
+photoRouter.get('/gallery', authorizationMiddleware, requireActiveSubscription, getGalleryPhotos);
+photoRouter.get('/recent', authorizationMiddleware, requireActiveSubscription, getRecentPhotos);
+photoRouter.get('/all-edits', authorizationMiddleware, requireActiveSubscription, getAllEditedPhotos);
 
-photoRouter.delete('/delete/:id', authorizationMiddleware, deletePhoto)
-photoRouter.put("/update/:id",upload.single('file'),authorizationMiddleware,updatephoto)
-photoRouter.post("/deletebulk",authorizationMiddleware,deletebulkimage)
-photoRouter.get("/signlephot/:id",authorizationMiddleware,photoId)
+photoRouter.put("/update/:id", authorizationMiddleware, requireActiveSubscription, upload.single('file'), updatephoto);
+photoRouter.get("/signlephot/:id", authorizationMiddleware, requireActiveSubscription, photoId);
+
+// Deletions stay available to lapsed users so they can still remove their own
+// data after the trial or subscription ends.
+photoRouter.delete('/delete/:id', authorizationMiddleware, deletePhoto);
+photoRouter.post("/deletebulk", authorizationMiddleware, deletebulkimage);
 
 
 module.exports = photoRouter;

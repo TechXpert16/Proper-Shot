@@ -14,6 +14,7 @@ const i18next =require("../config/i18n.js")
 const appleSignin  =require("apple-signin-auth")
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const photoModel = require('../models/photoModel');
+const { getAccessState, newTrialWindow, TRIAL_DAYS } = require('../utils/subscriptionAccess');
 
 const normalizePhoneNumber = (phoneNumber) => {
 
@@ -59,9 +60,7 @@ const userSignUp = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const trialStartDate = new Date();
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialStartDate.getDate() + 3);
+    const trial = newTrialWindow();
 
     const newUser = new userModel({
       name,
@@ -72,8 +71,8 @@ const userSignUp = async (req, res) => {
       countrycode,
       country,
       language: userLanguage,  // ✅ Save user language
-      trialstartin: trialStartDate,
-      trialendin: trialEndDate,
+      ...trial,
+      subscription_status: 'trial',
     });
 
     const saveUser = await newUser.save();
@@ -94,7 +93,7 @@ const userSignUp = async (req, res) => {
         i18next.t('signup.welcomeTitle'),
         i18next.t('signup.welcomeMessage'),
         "WELCOME_NOTIFICATION",
-        { trialDays: 3 }
+        { trialDays: TRIAL_DAYS }
       );
     }
 
@@ -102,29 +101,20 @@ const userSignUp = async (req, res) => {
       recipient: saveUser._id,
       heading: i18next.t('signup.welcomeTitle'),
       message: i18next.t('signup.welcomeMessage'),
-      params: { trialDays: 3 },
+      params: { trialDays: TRIAL_DAYS },
     });
     await newNotification.save();
 
-    setTimeout(async () => {
-      sendPushNotification(
-        deviceToken,
-        i18next.t('signup.trialEndedTitle'),
-        i18next.t('signup.trialEndedMessage'),
-        "TRIAL_END_NOTIFICATION",
-        {}
-      );
+    // The trial-ended notification used to be a setTimeout scheduled here. That
+    // timer only existed in this process's memory, so any restart or deploy lost
+    // it, and it never revoked access anyway. jobs/subscriptionSweep.js now
+    // expires trials durably from the database.
 
-      const trialEndNotification = new Notification({
-        recipient: saveUser._id,
-        heading: i18next.t('signup.trialEndedTitle'),
-        message: i18next.t('signup.trialEndedMessage'),
-        params: {},
-      });
-      await trialEndNotification.save();
-    }, 3 * 24 * 60 * 60 * 1000);
-
-    return res.status(200).json({ ...userData, accessToken });
+    return res.status(200).json({
+      ...userData,
+      accessToken,
+      subscription: getAccessState(saveUser),
+    });
   } catch (error) {
     console.error("Error in userSignUp:", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -185,6 +175,7 @@ const userLogin = async (req, res) => {
       language: user.language, // ✅ Send language in response
       ...others,
       accessToken,
+      subscription: getAccessState(user),
     });
   } catch (err) {
     console.log(err);
@@ -349,6 +340,10 @@ const loginWithGoogle = async (req, res) => {
         deviceToken,
         account_type: "google",
         language: language || "en", 
+        // Social signups previously stored no trial dates at all, so with
+        // entitlement gating they would have been blocked from day one.
+        ...newTrialWindow(),
+        subscription_status: 'trial',
       });
       await user.save();
      
@@ -404,6 +399,8 @@ const loginWithApple = async (req, res) => {
         account_type: "apple",
         language: language || "en",
         isVerified: true,
+        ...newTrialWindow(),
+        subscription_status: 'trial',
       });
       await user.save();
     } else {
@@ -651,12 +648,13 @@ const deleteUser = async (req, res) => {
       });
     }
 
-    // If user has a Stripe subscription, cancel it
-    if (user.subscription_status === 'active' && user.stripeAccountId) {
+    // Cancel billing whenever there is anything in Stripe to cancel. Gating this
+    // on subscription_status === 'active' meant a past_due or trialing customer
+    // kept getting invoiced after their account was deleted.
+    if (user.stripeAccountId) {
       try {
-        // Cancel any active subscriptions
-        if (user.subscription_id) {
-          await stripe.subscriptions.del(user.subscription_id);
+        if (user.subscription_id && user.subscription_id.startsWith('sub_')) {
+          await stripe.subscriptions.cancel(user.subscription_id);
         }
         // Delete the customer from Stripe
         if (user.stripeAccountId) {
