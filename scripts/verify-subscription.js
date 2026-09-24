@@ -215,7 +215,10 @@ const unix = (date) => Math.floor(date.getTime() / 1000);
         ['unpaid',                      { subscription_status: 'unpaid', subscriptionendin: daysFromNow(10) }, false, 'subscription_unpaid'],
         ['canceled',                    { subscription_status: 'canceled', subscriptionendin: daysFromNow(10) }, false, 'subscription_canceled'],
         ['incomplete (never paid)',     { subscription_status: 'incomplete', trialendin: daysFromNow(-1) }, false, 'payment_failed'],
-        ['incomplete_expired',          { subscription_status: 'incomplete_expired' },                  false, 'subscription_incomplete_expired'],
+        ['incomplete_expired',          { subscription_status: 'incomplete_expired', trialendin: daysFromNow(-1) }, false, 'subscription_incomplete_expired'],
+        ['checkout abandoned during trial', { subscription_status: 'incomplete', trialendin: daysFromNow(2) }, true, 'trial'],
+        ['abandoned checkout expired during trial', { subscription_status: 'incomplete_expired', trialendin: daysFromNow(2) }, true, 'trial'],
+        ['failed renewal ignores the trial window', { subscription_status: 'past_due', trialendin: daysFromNow(2), payment_failed_at: new Date() }, false, 'payment_failed'],
         ['admin',                       { subscription_status: 'canceled', isAdmin: true },             true,  'admin'],
     ];
 
@@ -314,6 +317,8 @@ const unix = (date) => Math.floor(date.getTime() / 1000);
         ['failed payment is blocked', { subscription_status: 'past_due', payment_failed_at: new Date() }, 402, 'payment_failed'],
         ['canceled subscription is blocked', { subscription_status: 'canceled' }, 402, 'subscription_canceled'],
         ['paying user is allowed', { subscription_status: 'active', subscriptionendin: daysFromNow(15) }, 200, null],
+        ['trial user who backed out of checkout is allowed', { subscription_status: 'incomplete', trialendin: daysFromNow(2) }, 200, null],
+        ['abandoned checkout after the trial is blocked', { subscription_status: 'incomplete', trialendin: daysFromNow(-1) }, 402, 'payment_failed'],
     ];
     for (const [label, doc, expectedStatus, expectedReason] of gateCases) {
         currentUser = new FakeUser(doc);

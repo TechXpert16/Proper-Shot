@@ -9,6 +9,10 @@
 // Statuses Stripe reports for a subscription that is being paid for normally.
 const ENTITLED_SUBSCRIPTION_STATUSES = ['active', 'trialing'];
 
+// Statuses of a subscription whose first invoice was never paid: the user
+// opened checkout but no payment went through, so nothing was bought yet.
+const NEVER_PAID_SUBSCRIPTION_STATUSES = ['incomplete', 'incomplete_expired'];
+
 // Statuses that mean Stripe has stopped collecting money for this subscription.
 const DEAD_SUBSCRIPTION_STATUSES = [
     'canceled',
@@ -98,6 +102,15 @@ const getAccessState = (user) => {
         };
     }
 
+    // An unfinished first checkout must not end the free trial early. The app
+    // lets trial users subscribe before their trial is over, and
+    // createSubscription stores 'incomplete' before the payment sheet is even
+    // shown, so backing out of checkout (or a declined first card) used to lock
+    // the user out with trial days still left.
+    if (NEVER_PAID_SUBSCRIPTION_STATUSES.includes(status) && isFuture(trialEndsAt)) {
+        return { ...base, hasAccess: true, trialActive: true, reason: 'trial' };
+    }
+
     if (status === 'past_due' || status === 'incomplete') {
         const graceUntil = user.payment_failed_at
             ? new Date(
@@ -132,6 +145,7 @@ module.exports = {
     newTrialWindow,
     effectiveTrialEnd,
     ENTITLED_SUBSCRIPTION_STATUSES,
+    NEVER_PAID_SUBSCRIPTION_STATUSES,
     DEAD_SUBSCRIPTION_STATUSES,
     PAST_DUE_GRACE_DAYS,
     TRIAL_DAYS,

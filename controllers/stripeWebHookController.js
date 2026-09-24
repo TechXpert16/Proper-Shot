@@ -407,8 +407,9 @@ const createSubscription = async (req, res) => {
         }
 
         // No trial_period_days on purpose: the free 3 days are granted at signup
-        // without a card and tracked in Mongo. By the time a user reaches this
-        // endpoint their trial is over, so the first invoice is charged now.
+        // without a card and tracked in Mongo, and the first invoice is charged
+        // now. Trial users can reach this endpoint early; getAccessState() keeps
+        // their trial running while this first invoice is still unpaid.
         const subscription = await stripe.subscriptions.create({
             customer: customerId,
             items: [{ price: priceId }],

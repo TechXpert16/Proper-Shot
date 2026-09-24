@@ -365,7 +365,9 @@ const loginWithGoogle = async (req, res) => {
     );
 
     const { password, ...others } = user._doc;
-    res.status(200).json({ ...others, accessToken });
+    // Same access object as email login/signup, so the app routes an expired social
+    // account straight to the paywall instead of opening the app first.
+    res.status(200).json({ ...others, accessToken, subscription: getAccessState(user) });
   } catch (error) {
     console.error(error);
     res.status(400).json({ error: "Error while logging in with Google: " + error.message });
@@ -418,7 +420,9 @@ const loginWithApple = async (req, res) => {
     );
 
     const { password, ...others } = user._doc;
-    res.status(200).json({ ...others, accessToken });
+    // Same access object as email login/signup, so the app routes an expired social
+    // account straight to the paywall instead of opening the app first.
+    res.status(200).json({ ...others, accessToken, subscription: getAccessState(user) });
   } catch (error) {
     console.error("Error while logging in with Apple:", error);
     res.status(400).json({ error: "Error while logging in with Apple: " + error.message });
